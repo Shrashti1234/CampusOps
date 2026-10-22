@@ -30,12 +30,14 @@ def main():
         admin_email = "smoke-admin-" + str(uuid4()) + "@example.edu"
         admin_password = secrets.token_urlsafe(24)
         # Admin provisioning is a local-only CLI operation, not a public API.
-        subprocess.run(
+        provision = subprocess.run(
             ["docker", "compose", "exec", "-T", "backend",
              "python", "create_admin.py", admin_email],
-            input=admin_password + "\n", text=True, check=True,
+            input=admin_password + "\n", text=True, check=False,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
+        if provision.returncode != 0:
+            raise RuntimeError("Admin provisioning failed: " + provision.stderr[-1500:])
         os.environ["CAMPUSOPS_SMOKE_ADMIN_EMAIL"] = admin_email
         os.environ["CAMPUSOPS_SMOKE_ADMIN_PASSWORD"] = admin_password
     assert request("/health")["status"] == "ok"
