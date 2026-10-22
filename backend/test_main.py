@@ -137,3 +137,32 @@ def test_semantic_mode_falls_back_without_model(monkeypatch):
     matches, engine=compare(issue.title,issue.description,issue.location,[issue],mode="semantic")
     assert engine=="tfidf"
     assert matches[0]["id"]=="demo"
+
+def test_websocket_rejects_invalid_token():
+    from starlette.websockets import WebSocketDisconnect
+    with TestClient(app) as c:
+        with c.websocket_connect("/ws") as ws:
+            ws.send_text("invalid.jwt.token")
+            try:
+                ws.receive_json()
+                assert False, "Invalid token should close the connection"
+            except WebSocketDisconnect as exc:
+                assert exc.code == 1008
+
+def test_expired_token_rejected_by_api_and_websocket():
+    import jwt
+    from datetime import timedelta
+    from main import JWT_SECRET, ALGORITHM
+    from starlette.websockets import WebSocketDisconnect
+    with TestClient(app) as c:
+        valid = student(c)
+        who = c.get("/auth/me",headers=headers(valid)).json()
+        expired = jwt.encode({"sub":who["id"],"exp":datetime.now(timezone.utc)-timedelta(seconds=5)},JWT_SECRET,algorithm=ALGORITHM)
+        assert c.get("/issues",headers=headers(expired)).status_code==401
+        with c.websocket_connect("/ws") as ws:
+            ws.send_text(expired)
+            try:
+                ws.receive_json()
+                assert False, "Expired token should close the connection"
+            except WebSocketDisconnect as exc:
+                assert exc.code == 1008
