@@ -92,3 +92,25 @@ def test_bad_login():
     with TestClient(app) as c:
         t=student(c)
         assert c.post("/auth/login",json={"email":"missing@example.edu","password":"not-correct"}).status_code==401
+
+def test_analytics_student_scoped():
+    with TestClient(app) as c:
+        t1=student(c);t2=student(c)
+        c.post("/issues",json=payload(),headers=headers(t1))
+        own=c.get("/analytics",headers=headers(t1))
+        assert own.status_code==200
+        assert own.json()["total"]==1
+        assert own.json()["categories"][0]["name"]=="Water"
+        assert c.get("/analytics",headers=headers(t2)).json()["total"]==0
+        assert c.get("/analytics").status_code==401
+
+def test_duplicate_preview_does_not_create_issue():
+    with TestClient(app) as c:
+        t=student(c)
+        first=c.post("/issues",json=payload(),headers=headers(t))
+        assert first.status_code==201
+        before=c.get("/issues",headers=headers(t)).json()["issues"]
+        r=c.post("/issues/similar",json=payload(),headers=headers(t))
+        assert r.status_code==200
+        assert r.json()["possible_duplicates"]
+        assert len(c.get("/issues",headers=headers(t)).json()["issues"])==len(before)
