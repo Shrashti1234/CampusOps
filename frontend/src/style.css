@@ -32,3 +32,5 @@
 .chart-body{height:230px;margin-top:20px}.resolution-number{font-size:58px;letter-spacing:-3px;font-weight:800;margin:29px 0 12px;color:#685cdb}.resolution-number span{font-size:26px}.progress-track{height:10px;border-radius:20px;background:#eae8fb;overflow:hidden}.progress-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#7569e9,#a39af7);transition:width .25s}.insight-side small{display:block;margin-top:20px;color:#99a3b6}
 .preview-button{background:#f2efff;color:#6556d1;border:1px solid #dcd5ff;padding:12px;border-radius:10px;font-weight:700}.preview-button:disabled{opacity:.55;cursor:not-allowed}.duplicate-preview{background:#f3f0ff;border:1px solid #dcd5ff;color:#6053c8;padding:12px;border-radius:10px;font-size:13px}.duplicate-preview p{color:#6053c8}
 @media(max-width:960px){.insights{grid-template-columns:1fr}}@media(max-width:760px){.insights{margin-top:-14px}.insight-chart,.insight-side{padding:17px}.chart-body{height:200px}}
+
+.engine-label{display:block;margin-top:7px;font-size:11px;color:#8679cc;font-weight:600}
