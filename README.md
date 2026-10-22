@@ -1,6 +1,6 @@
 # CampusOps
 
-Campus issue reporting and live resolution workspace. **Milestone 3: authenticated local demo, not production-ready.**
+Campus issue reporting and live resolution workspace. **Authenticated local portfolio MVP. Not production-ready.**
 
 ## Features
 - React + TypeScript responsive issue board
@@ -9,7 +9,7 @@ Campus issue reporting and live resolution workspace. **Milestone 3: authenticat
 - Optional local sentence-embedding similarity with TF-IDF fallback for duplicate complaints
 - SQLAlchemy persistence using SQLite by default
 - FastAPI API docs and backend smoke tests
-- GitHub Actions CI workflow for backend tests and frontend build
+- GitHub Actions CI workflow for backend tests, frontend build, and Docker integration checks
 - Student registration/login and admin-only status changes
 - Per-student issue visibility and authenticated WebSocket events
 
@@ -32,7 +32,15 @@ npm install
 npm run dev
 ```
 
-Create a local admin (from the backend directory):\n\n\`\`\`bash\npython create_admin.py admin@example.edu\n\`\`\`\n\nThe script prompts for a password. Student accounts are created through the frontend; admin accounts are created through the local script. Set a stable, strong \`JWT_SECRET\` environment variable before starting the backend if you want logins to survive restarts.\n\nOpen http://localhost:5173; API docs at http://localhost:8000/docs. To run backend tests: `cd backend && python -m pytest -q`.
+Create a local administrator from the backend directory:
+
+```bash
+python create_admin.py admin@example.edu
+```
+
+The script prompts for a password. Students register through the frontend; administrators are provisioned locally. Set a strong, stable `JWT_SECRET` before starting the backend so sessions remain valid across restarts.
+
+Open http://localhost:5173. FastAPI documentation is at http://localhost:8000/docs. Run backend tests with `cd backend && python -m pytest -q`.
 
 ## Optional semantic AI mode
 
@@ -68,4 +76,4 @@ Services bind to **127.0.0.1 only**, not a public interface. SQLite data persist
 - [ ] Run `cd backend && python -m pytest -q` and `cd frontend && npm run build`
 
 ## Scope and limitations
-This is a **local development prototype**, not a production service. Authentication and student/admin roles are implemented, but this is not a hardened production identity system: no email verification, rate limiting, refresh-token rotation, account recovery, or production-grade session revocation. Existing legacy issues without owners are visible only to admins. No file uploads or multi-campus tenant isolation. Do not deploy publicly or submit personal/sensitive complaint data. Semantic matching is optional and not active unless configured. Suggestions are not automatically merged. Drag-and-drop uses browser-native desktop drag events; on touch devices use the status dropdown. Future milestones: secure production migrations, email verification, rate limiting, session management, semantic embeddings, deployment.
+This is a **local development prototype**, not a production service. Authentication and student/admin roles are implemented, but this is not a hardened production identity system: no email verification, rate limiting, refresh-token rotation, account recovery, or production-grade session revocation. Existing legacy issues without owners are visible only to admins. No file uploads or multi-campus tenant isolation. Do not deploy publicly or submit personal/sensitive complaint data. Semantic matching is optional and not active unless configured. Suggestions are not automatically merged. Drag-and-drop uses browser-native desktop drag events; on touch devices use the status dropdown. Before any public deployment, implement secure database migrations, email verification, rate limiting, robust session management, and a production hosting configuration.
