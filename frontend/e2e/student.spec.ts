@@ -9,5 +9,10 @@ test('student can register, submit, and find their own issue', async ({ page }) 
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('heading', { name: 'Campus issue board' })).toBeVisible();
   await page.getByRole('button', { name: /report an issue/i }).click();
-  await expect(page.getByRole('dialog').or(page.getByText('Report a new issue'))).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Report a campus issue' })).toBeVisible();
+  await page.getByPlaceholder('e.g. Water cooler not working').fill('Library wifi is unavailable');
+  await page.getByPlaceholder('Describe what happened...').fill('Wifi network is down near the library desks');
+  await page.getByPlaceholder('e.g. Block B, Ground Floor').fill('Library');
+  await page.getByRole('button', { name: /submit report/i }).click();
+  await expect(page.getByRole('heading', { name: 'Library wifi is unavailable' })).toBeVisible();
 });
