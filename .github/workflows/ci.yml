@@ -45,7 +45,9 @@ jobs:
           done
           docker compose logs --tail=100
           exit 1
-      - name: Exercise registration and issue lifecycle
+      - name: Exercise registration and admin resolution lifecycle
+        env:
+          CAMPUSOPS_SMOKE_CREATE_ADMIN: '1'
         run: python3 scripts/smoke_test.py
       - name: Stop services
         if: always()
