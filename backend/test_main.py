@@ -114,3 +114,26 @@ def test_duplicate_preview_does_not_create_issue():
         assert r.status_code==200
         assert r.json()["possible_duplicates"]
         assert len(c.get("/issues",headers=headers(t)).json()["issues"])==len(before)
+
+def test_similarity_engine_reports_fallback():
+    with TestClient(app) as c:
+        t=student(c)
+        result=c.post("/issues/similar",json=payload(),headers=headers(t))
+        assert result.status_code==200
+        assert result.json()["similarity_engine"]=="none"
+        c.post("/issues",json=payload(),headers=headers(t))
+        result=c.post("/issues/similar",json=payload(),headers=headers(t))
+        assert result.status_code==200
+        assert result.json()["similarity_engine"]=="tfidf"
+
+def test_semantic_mode_falls_back_without_model(monkeypatch):
+    from similarity import compare
+    from types import SimpleNamespace
+    import similarity
+    def unavailable():
+        raise ImportError("Optional model unavailable")
+    monkeypatch.setattr(similarity,"get_encoder",unavailable)
+    issue=SimpleNamespace(id="demo",title="Broken water cooler",description="Cooler near main stairs is not working",location="Block B")
+    matches, engine=compare(issue.title,issue.description,issue.location,[issue],mode="semantic")
+    assert engine=="tfidf"
+    assert matches[0]["id"]=="demo"
