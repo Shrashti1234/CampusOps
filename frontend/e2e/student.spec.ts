@@ -6,7 +6,10 @@ test('student can register, submit, and find their own issue', async ({ page }) 
   await page.getByRole('button', { name: /create an account/i }).click();
   await page.getByPlaceholder('student@example.edu').fill(email);
   await page.getByPlaceholder('Your password').fill('browser-demo-password-123');
+  const response = page.waitForResponse(r => r.url().includes('/auth/register') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Create account' }).click();
+  const registration = await response;
+  expect(registration.status(), 'registration API response: ' + await registration.text()).toBe(200);
   await expect(page.getByRole('heading', { name: 'Campus issue board' })).toBeVisible();
   await page.getByRole('button', { name: /report an issue/i }).click();
   await expect(page.getByRole('heading', { name: 'Report a campus issue' })).toBeVisible();
