@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 import os
 import secrets
+import asyncio
 
 import jwt
 from jwt import InvalidTokenError
@@ -62,7 +63,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CampusOps API", version="0.3.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["GET","POST","PATCH"], allow_headers=["Content-Type", "Authorization"])
-clients: dict[WebSocket, str] = {}
+clients: dict[WebSocket, str] = {}  # websocket -> JWT, revalidated for every broadcast
 sequence = 0
 
 class RegisterIn(BaseModel):
@@ -142,8 +143,14 @@ def similar_issues(title, description, location, existing):
 
 
 async def broadcast(event, owner_id):
-    for ws, role_user in list(clients.items()):
-        if role_user == "admin" or role_user == owner_id:
+    for ws, token in list(clients.items()):
+        user = get_user_by_token(token)
+        if user is None:
+            clients.pop(ws, None)
+            try: await ws.close(code=1008)
+            except Exception: pass
+            continue
+        if user.role == "admin" or user.id == owner_id:
             try: await ws.send_json(event)
             except Exception: clients.pop(ws, None)
 
@@ -225,13 +232,21 @@ async def events(ws:WebSocket):
     # Authenticate with first message rather than URL query parameter.
     await ws.accept()
     try:
-        token = await ws.receive_text()
+        try:
+            token = await asyncio.wait_for(ws.receive_text(), timeout=10)
+        except asyncio.TimeoutError:
+            await ws.close(code=1008)
+            return
         user = get_user_by_token(token)
         if user is None:
             await ws.close(code=1008)
             return
-        clients[ws] = "admin" if user.role == "admin" else user.id
+        clients[ws] = token
         await ws.send_json({"type":"connected","sequence":sequence})
-        while True: await ws.receive_text()
+        while True:
+            await ws.receive_text()
+            if get_user_by_token(token) is None:
+                await ws.close(code=1008)
+                break
     except WebSocketDisconnect: pass
     finally: clients.pop(ws,None)
