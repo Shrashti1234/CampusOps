@@ -28,3 +28,30 @@ def test_websocket_event():
             assert ws.receive_json()["type"] == "connected"
             client.post("/issues",json={"title":"Lights not working","description":"Lights flickering in corridor","location":"Block A","category":"Electricity"})
             assert ws.receive_json()["type"] == "issue.created"
+
+def test_invalid_status_rejected():
+    with TestClient(app) as client:
+        response = client.post("/issues", json={"title":"Leaking tap", "description":"Tap leaks in washroom", "location":"Block C", "category":"Water"})
+        assert response.status_code == 201
+        issue_id = response.json()["id"]
+        bad = client.patch("/issues/"+issue_id+"/status", json={"status":"deleted"})
+        assert bad.status_code == 422
+        assert client.get("/issues").json()["issues"][0]["status"] == "open"
+
+def test_missing_issue_returns_404():
+    with TestClient(app) as client:
+        response = client.patch("/issues/does-not-exist/status", json={"status":"resolved"})
+        assert response.status_code == 404
+
+def test_status_change_broadcasts_event():
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws") as ws:
+            assert ws.receive_json()["type"] == "connected"
+            created = client.post("/issues", json={"title":"Wifi outage", "description":"Network unavailable on floor two", "location":"Library", "category":"Internet"})
+            assert created.status_code == 201
+            assert ws.receive_json()["type"] == "issue.created"
+            updated = client.patch("/issues/"+created.json()["id"]+"/status", json={"status":"resolved"})
+            assert updated.status_code == 200
+            event = ws.receive_json()
+            assert event["type"] == "issue.updated"
+            assert event["issue"]["status"] == "resolved"
