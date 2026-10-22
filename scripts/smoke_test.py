@@ -1,6 +1,8 @@
 """HTTP smoke test for a running local CampusOps stack (standard library only)."""
 import json
 import os
+import secrets
+import subprocess
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
@@ -24,6 +26,18 @@ def request(path, method="GET", payload=None, token=None, expected=200):
     return body
 
 def main():
+    if os.environ.get("CAMPUSOPS_SMOKE_CREATE_ADMIN") == "1":
+        admin_email = "smoke-admin-" + str(uuid4()) + "@example.edu"
+        admin_password = secrets.token_urlsafe(24)
+        # Admin provisioning is a local-only CLI operation, not a public API.
+        subprocess.run(
+            ["docker", "compose", "exec", "-T", "backend",
+             "python", "create_admin.py", admin_email],
+            input=admin_password + "\n", text=True, check=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        os.environ["CAMPUSOPS_SMOKE_ADMIN_EMAIL"] = admin_email
+        os.environ["CAMPUSOPS_SMOKE_ADMIN_PASSWORD"] = admin_password
     assert request("/health")["status"] == "ok"
     email = "smoke-" + str(uuid4()) + "@example.edu"
     credentials = {"email": email, "password": "demo-test-password-only"}
