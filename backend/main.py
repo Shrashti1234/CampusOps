@@ -14,8 +14,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, String, DateTime, ForeignKey, select
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from similarity import compare
 
 URL = os.getenv("DATABASE_URL", "sqlite:///./campusops.db")
 engine = create_engine(URL, connect_args={"check_same_thread": False} if URL.startswith("sqlite") else {}, pool_pre_ping=True)
@@ -139,10 +138,8 @@ def me(user: User = Depends(current_user)):
     return user_json(user)
 
 def similar_issues(title, description, location, existing):
-    if not existing: return []
-    docs = [title+" "+description+" "+location]+[i.title+" "+i.description+" "+i.location for i in existing]
-    scores = cosine_similarity(TfidfVectorizer(stop_words="english",ngram_range=(1,2)).fit_transform(docs))[0,1:]
-    return [{"id":i.id,"title":i.title,"similarity":round(float(score),3)} for i,score in sorted(zip(existing,scores),key=lambda x:x[1],reverse=True) if score>=0.25][:3]
+    return compare(title, description, location, existing)
+
 
 async def broadcast(event, owner_id):
     for ws, role_user in list(clients.items()):
@@ -193,7 +190,8 @@ def preview_similar(data: IssueIn, user: User = Depends(current_user)):
     """Preview potential duplicates before submitting, scoped to user's own reports."""
     with Session() as db:
         prior = db.scalars(select(Issue).where(Issue.status != "resolved", Issue.owner_id == user.id)).all()
-        return {"possible_duplicates": similar_issues(data.title, data.description, data.location, prior)}
+        matches, engine = similar_issues(data.title, data.description, data.location, prior)
+        return {"possible_duplicates": matches, "similarity_engine": engine}
 
 @app.post("/issues", status_code=201)
 async def create_issue(data: IssueIn, user: User = Depends(current_user)):
@@ -204,12 +202,12 @@ async def create_issue(data: IssueIn, user: User = Depends(current_user)):
         # Student submissions are checked only against their own existing reports;
         # no other student's complaint details are disclosed.
         prior = db.scalars(select(Issue).where(Issue.status!="resolved", Issue.owner_id==user.id)).all()
-        duplicates = similar_issues(data.title,data.description,data.location,prior)
+        duplicates, engine = similar_issues(data.title,data.description,data.location,prior)
         issue = Issue(id=str(uuid4()),title=data.title.strip(),description=data.description.strip(),location=data.location.strip(),category=data.category.strip(),status="open",owner_id=user.id,created_at=datetime.now(timezone.utc))
         db.add(issue);db.commit();result=issue_json(issue)
     sequence+=1
     await broadcast({"type":"issue.created","sequence":sequence,"issue":result},user.id)
-    return {**result,"possible_duplicates":duplicates}
+    return {**result,"possible_duplicates":duplicates,"similarity_engine":engine}
 
 @app.patch("/issues/{issue_id}/status")
 async def update_status(issue_id:str, data:StatusIn, user: User = Depends(require_admin)):
