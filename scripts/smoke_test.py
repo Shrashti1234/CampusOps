@@ -55,6 +55,12 @@ def main():
     assert issue["status"] == "open"
     assert any(i["id"] == issue["id"] for i in request("/issues", token=token)["issues"])
     assert request("/analytics", token=token)["total"] >= 1
+    second_email = "smoke-second-" + str(uuid4()) + "@example.edu"
+    second = request("/auth/register", "POST", {
+        "email": second_email, "password": "second-demo-test-password"
+    }, expected=201)["access_token"]
+    assert all(i["id"] != issue["id"] for i in request("/issues", token=second)["issues"])
+    assert request("/analytics", token=second)["total"] == 0
     assert request("/issues/similar", "POST", {
         "title": "Library wifi offline",
         "description": "Internet is unavailable in the reading room",
