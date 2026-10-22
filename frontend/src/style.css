@@ -34,3 +34,16 @@
 @media(max-width:960px){.insights{grid-template-columns:1fr}}@media(max-width:760px){.insights{margin-top:-14px}.insight-chart,.insight-side{padding:17px}.chart-body{height:200px}}
 
 .engine-label{display:block;margin-top:7px;font-size:11px;color:#8679cc;font-weight:600}
+
+/* Accessibility and small-screen usability */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7466e7;outline-offset:3px}
+.issue h3,.issue p,.location{overflow-wrap:anywhere}
+@media(max-width:520px){
+  .auth-card{padding:24px}
+  .actions{flex-wrap:wrap;justify-content:flex-start}
+  .actions .primary{width:100%}
+  .filters{width:100%;flex-wrap:wrap}
+  .search,.search input{min-width:0;width:100%}
+  .filters select{width:100%}
+  .toast{right:12px;bottom:12px}
+}
