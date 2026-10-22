@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="CampusOps API", version="0.3.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["GET","POST","PATCH"], allow_headers=["Content-Type", "Authorization"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173","http://127.0.0.1:5173"], allow_methods=["GET","POST","PATCH"], allow_headers=["Content-Type", "Authorization"])
 clients: dict[WebSocket, str] = {}  # websocket -> JWT, revalidated for every broadcast
 sequence = 0
 
