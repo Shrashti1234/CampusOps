@@ -1,0 +1,21 @@
+# Local demo only. Do not expose to public networks.
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: sqlite:////data/campusops.db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env before running}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - campusops-data:/data
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      - backend
+volumes:
+  campusops-data:
