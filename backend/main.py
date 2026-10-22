@@ -160,6 +160,41 @@ def list_issues(user: User = Depends(current_user)):
         if user.role != "admin": query = query.where(Issue.owner_id == user.id)
         return {"issues":[issue_json(i) for i in db.scalars(query).all()], "sequence":sequence}
 
+@app.get("/analytics")
+def analytics(user: User = Depends(current_user)):
+    """Counts only issues visible to this user; no cross-student leakage."""
+    with Session() as db:
+        query = select(Issue)
+        if user.role != "admin":
+            query = query.where(Issue.owner_id == user.id)
+        rows = db.scalars(query).all()
+    statuses = {"open": 0, "in_progress": 0, "resolved": 0}
+    categories = {}
+    locations = {}
+    daily = {}
+    for item in rows:
+        statuses[item.status] = statuses.get(item.status, 0) + 1
+        categories[item.category] = categories.get(item.category, 0) + 1
+        locations[item.location] = locations.get(item.location, 0) + 1
+        day = item.created_at.date().isoformat()
+        daily[day] = daily.get(day, 0) + 1
+    total = len(rows)
+    return {
+        "total": total,
+        "status": statuses,
+        "resolution_rate": round(100 * statuses["resolved"] / total, 1) if total else 0,
+        "categories": [{"name": name, "count": count} for name, count in sorted(categories.items(), key=lambda x: (-x[1], x[0]))],
+        "locations": [{"name": name, "count": count} for name, count in sorted(locations.items(), key=lambda x: (-x[1], x[0]))[:5]],
+        "daily": [{"date": day, "count": daily[day]} for day in sorted(daily)],
+    }
+
+@app.post("/issues/similar")
+def preview_similar(data: IssueIn, user: User = Depends(current_user)):
+    """Preview potential duplicates before submitting, scoped to user's own reports."""
+    with Session() as db:
+        prior = db.scalars(select(Issue).where(Issue.status != "resolved", Issue.owner_id == user.id)).all()
+        return {"possible_duplicates": similar_issues(data.title, data.description, data.location, prior)}
+
 @app.post("/issues", status_code=201)
 async def create_issue(data: IssueIn, user: User = Depends(current_user)):
     global sequence
