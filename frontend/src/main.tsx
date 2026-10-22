@@ -5,7 +5,7 @@ import{BarChart,Bar,CartesianGrid,XAxis,YAxis,Tooltip,ResponsiveContainer}from'r
 import './style.css';
 type Issue={id:string;title:string;description:string;location:string;category:string;status:'open'|'in_progress'|'resolved';created_at:string};
 type Duplicate={id:string;title:string;similarity:number};
-const API=import.meta.env.VITE_API_URL||'http://localhost:8000';
+const API=import.meta.env.VITE_API_URL||'http://'+(window.location.hostname==='127.0.0.1'?'127.0.0.1':'localhost')+':8000';
 const columns=[{id:'open',label:'Reported',color:'#eeaa64'},{id:'in_progress',label:'In progress',color:'#7b73ed'},{id:'resolved',label:'Resolved',color:'#31bb91'}]as const;
 function App(){
  const[token,setToken]=useState<string>(()=>sessionStorage.getItem('campusops_token')||''),[role,setRole]=useState<'student'|'admin'|null>(null),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[register,setRegister]=useState(false),[authError,setAuthError]=useState('');
