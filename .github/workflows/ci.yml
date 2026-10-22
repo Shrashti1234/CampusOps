@@ -48,6 +48,7 @@ jobs:
       - name: Exercise registration and admin resolution lifecycle
         env:
           CAMPUSOPS_SMOKE_CREATE_ADMIN: '1'
+          JWT_SECRET: ci-only-temporary-secret-not-for-production-123456
         run: python3 scripts/smoke_test.py
       - name: Stop services
         if: always()
