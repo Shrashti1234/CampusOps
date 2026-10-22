@@ -1,6 +1,6 @@
 # CampusOps
 
-Campus issue reporting and live resolution workspace. **Milestone 1: local demo only.**
+Campus issue reporting and live resolution workspace. **Milestone 3: authenticated local demo, not production-ready.**
 
 ## Features
 - React + TypeScript responsive issue board
@@ -10,6 +10,8 @@ Campus issue reporting and live resolution workspace. **Milestone 1: local demo 
 - SQLAlchemy persistence using SQLite by default
 - FastAPI API docs and backend smoke tests
 - GitHub Actions CI workflow for backend tests and frontend build
+- Student registration/login and admin-only status changes
+- Per-student issue visibility and authenticated WebSocket events
 
 ## Run backend
 
@@ -30,7 +32,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173; API docs at http://localhost:8000/docs. To run backend tests: `cd backend && python -m pytest -q`.
+Create a local admin (from the backend directory):\n\n\`\`\`bash\npython create_admin.py admin@example.edu\n\`\`\`\n\nThe script prompts for a password. Student accounts are created through the frontend; admin accounts are created through the local script. Set a stable, strong \`JWT_SECRET\` environment variable before starting the backend if you want logins to survive restarts.\n\nOpen http://localhost:5173; API docs at http://localhost:8000/docs. To run backend tests: `cd backend && python -m pytest -q`.
 
 ## Scope and limitations
-This is a **local development prototype**, not a production service. No authentication, staff roles, tenant isolation, file uploads, or production-grade WebSocket authorization. Do not deploy publicly or submit personal/sensitive complaint data. Duplicate matching is a TF-IDF baseline, not an LLM or trained semantic embedding model; suggestions are not automatically merged. Drag-and-drop uses browser-native desktop drag events; on touch devices use the status dropdown. Future milestones: authentication and roles, secure database isolation, semantic embeddings, tests, deployment.
+This is a **local development prototype**, not a production service. Authentication and student/admin roles are implemented, but this is not a hardened production identity system: no email verification, rate limiting, refresh-token rotation, account recovery, or production-grade session revocation. Existing legacy issues without owners are visible only to admins. No file uploads or multi-campus tenant isolation. Do not deploy publicly or submit personal/sensitive complaint data. Duplicate matching is a TF-IDF baseline, not an LLM or trained semantic embedding model; suggestions are not automatically merged. Drag-and-drop uses browser-native desktop drag events; on touch devices use the status dropdown. Future milestones: secure production migrations, email verification, rate limiting, session management, semantic embeddings, deployment.
