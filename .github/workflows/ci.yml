@@ -28,3 +28,27 @@ jobs:
           node-version: '20'
       - run: npm install
       - run: npm run build
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start local demo
+        env:
+          JWT_SECRET: ci-only-temporary-secret-not-for-production-123456
+        run: |
+          docker compose up -d --build
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null && curl -fsS http://127.0.0.1:5173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --tail=100
+          exit 1
+      - name: Exercise registration and issue lifecycle
+        run: python3 scripts/smoke_test.py
+      - name: Stop services
+        if: always()
+        env:
+          JWT_SECRET: ci-only-temporary-secret-not-for-production-123456
+        run: docker compose down
