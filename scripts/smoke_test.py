@@ -48,6 +48,20 @@ def main():
         "category": "Internet"
     }, token=token)["possible_duplicates"]
     request("/issues/" + issue["id"] + "/status", "PATCH", {"status": "resolved"}, token=token, expected=403)
+    admin_email = os.environ.get("CAMPUSOPS_SMOKE_ADMIN_EMAIL")
+    admin_password = os.environ.get("CAMPUSOPS_SMOKE_ADMIN_PASSWORD")
+    if admin_email and admin_password:
+        admin_token = request("/auth/login", "POST", {
+            "email": admin_email, "password": admin_password
+        })["access_token"]
+        admin_issues = request("/issues", token=admin_token)["issues"]
+        assert any(i["id"] == issue["id"] for i in admin_issues)
+        changed = request("/issues/" + issue["id"] + "/status", "PATCH",
+                          {"status": "resolved"}, token=admin_token)
+        assert changed["status"] == "resolved"
+        own_issues = request("/issues", token=token)["issues"]
+        assert any(i["id"] == issue["id"] and i["status"] == "resolved" for i in own_issues)
+        print("PASS: administrator visibility, status update, student status sync")
     print("PASS: health, auth, issue submission, analytics, duplicate preview, role restrictions")
 
 if __name__ == "__main__":
